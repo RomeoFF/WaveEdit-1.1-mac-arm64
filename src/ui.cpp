@@ -18,6 +18,7 @@
 #include "osdialog/osdialog.h"
 
 #include "lodepng/lodepng.h"
+#include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
 
 #include "tablabels.hpp"
 
@@ -1058,15 +1059,14 @@ void uiInit() {
 	ImGui::GetIO().IniFilename = NULL;
 	styleId = 3;
 
-	// Load fonts
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("fonts/Lekton-Regular.ttf", 15.0);
+	// Fonts are loaded lazily by uiUpdateDpi(), at the display's pixel density
 	logoTextureLight = loadImage("logo-light.png");
 	logoTextureDark = loadImage("logo-dark.png");
 
 	// Load UI settings
 	// If this gets any more complicated, it should be JSON.
 	{
-		FILE *f = fopen("ui.dat", "rb");
+		FILE *f = fopen(userPath("ui.dat").c_str(), "rb");
 		if (f) {
 			fread(&styleId, sizeof(styleId), 1, f);
 			fclose(f);
@@ -1077,10 +1077,38 @@ void uiInit() {
 }
 
 
+/** Rasterizes the UI font at the framebuffer's pixel density (2x on Retina) so text stays sharp.
+Call before each ImGui NewFrame. Rebuilds the font atlas when the window moves to a display with a different scale. */
+void uiUpdateDpi(SDL_Window *window) {
+	static float currentScale = 0.0;
+	int w, h, dw, dh;
+	SDL_GetWindowSize(window, &w, &h);
+	SDL_GL_GetDrawableSize(window, &dw, &dh);
+	if (w <= 0 || dw <= 0)
+		return;
+	float scale = roundf(4.0 * dw / w) / 4.0;
+	scale = clampf(scale, 1.0, 4.0);
+	if (scale == currentScale)
+		return;
+	currentScale = scale;
+
+	ImGuiIO &io = ImGui::GetIO();
+	io.Fonts->Clear();
+	ImFontConfig config;
+	// Oversampling is unnecessary when rasterizing at native resolution
+	config.OversampleH = (scale >= 2.0) ? 1 : 3;
+	config.OversampleV = 1;
+	io.Fonts->AddFontFromFileTTF("fonts/Lekton-Regular.ttf", 15.0 * scale, &config);
+	io.FontGlobalScale = 1.0 / scale;
+	// Forces the backend to re-upload the font texture on the next NewFrame
+	ImGui_ImplSdlGL2_InvalidateDeviceObjects();
+}
+
+
 void uiDestroy() {
 	// Save UI settings
 	{
-		FILE *f = fopen("ui.dat", "wb");
+		FILE *f = fopen(userPath("ui.dat").c_str(), "wb");
 		if (f) {
 			fwrite(&styleId, sizeof(styleId), 1, f);
 			fclose(f);

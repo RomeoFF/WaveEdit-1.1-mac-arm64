@@ -1,1 +1,7 @@
 *.o
+build/
+dist/
+/WaveEdit
+.DS_Store
+autosave.dat
+ui.dat

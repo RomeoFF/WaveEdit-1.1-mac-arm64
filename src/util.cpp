@@ -241,3 +241,20 @@ unsigned char * base64_decode(const unsigned char *src, size_t len,
 	*out_len = pos - out;
 	return out;
 }
+
+
+#ifdef ARCH_MAC
+#include <sys/stat.h>
+#endif
+
+std::string userPath(const char *filename) {
+#ifdef ARCH_MAC
+	const char *home = getenv("HOME");
+	if (home && home[0]) {
+		std::string dir = std::string(home) + "/Library/Application Support/WaveEdit";
+		mkdir(dir.c_str(), 0755);
+		return dir + "/" + filename;
+	}
+#endif
+	return filename;
+}

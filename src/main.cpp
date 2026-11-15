@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 	// Initialize modules
 	uiInit();
 	historyClear();
-	currentBank.load("autosave.dat");
+	currentBank.load(userPath("autosave.dat").c_str());
 	historyPush();
 	catalogInit();
 	audioInit();
@@ -117,6 +117,7 @@ int main(int argc, char **argv) {
 			SDL_SetWindowTitle(window, newTitle);
 		}
 
+		uiUpdateDpi(window);
 		ImGui_ImplSdlGL2_NewFrame(window);
 		// Only render if window is visible
 		Uint32 flags = SDL_GetWindowFlags(window);
@@ -126,7 +127,10 @@ int main(int argc, char **argv) {
 		}
 
 		// Render frame
-		glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
+		// Viewport is in physical pixels (drawable size), not points, for Retina displays
+		int drawableW, drawableH;
+		SDL_GL_GetDrawableSize(window, &drawableW, &drawableH);
+		glViewport(0, 0, drawableW, drawableH);
 
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -134,7 +138,7 @@ int main(int argc, char **argv) {
 		SDL_GL_SwapWindow(window);
 	}
 
-	currentBank.save("autosave.dat");
+	currentBank.save(userPath("autosave.dat").c_str());
 
 	// Cleanup
 	uiDestroy();

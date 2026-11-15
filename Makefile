@@ -1,6 +1,6 @@
 VERSION = 1.1
 
-FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=nocona -ffast-math \
+FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -ffast-math -fno-finite-math-only \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
 	-I. -Iext -Iext/imgui -Idep/include -Idep/include/SDL2
 CFLAGS =
@@ -29,14 +29,18 @@ ifeq ($(ARCH),lin)
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += ext/osdialog/osdialog_gtk2.c
 else ifeq ($(ARCH),mac)
-	# Mac
-	FLAGS += -DARCH_MAC \
-		-mmacosx-version-min=10.7
+	# Mac (Apple Silicon + Intel). Dependencies come from Homebrew:
+	#   brew install sdl2 libsndfile libsamplerate
+	BREW_PREFIX ?= $(shell brew --prefix)
+	MACOS_MIN ?= 14.0
+	FLAGS += -DARCH_MAC -DGL_SILENCE_DEPRECATION \
+		-mmacosx-version-min=$(MACOS_MIN) \
+		-I$(BREW_PREFIX)/include -I$(BREW_PREFIX)/include/SDL2
 	CXXFLAGS += -stdlib=libc++
-	LDFLAGS += -mmacosx-version-min=10.7 \
+	LDFLAGS += -mmacosx-version-min=$(MACOS_MIN) \
 		-stdlib=libc++ -lpthread \
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
-		-Ldep/lib -lSDL2 -lsamplerate -lsndfile
+		-L$(BREW_PREFIX)/lib -lSDL2 -lsamplerate -lsndfile
 	SOURCES += ext/osdialog/osdialog_mac.m
 else ifeq ($(ARCH),win)
 	# Windows
@@ -93,15 +97,8 @@ else ifeq ($(ARCH),mac)
 	cp Info.plist dist/WaveEdit/WaveEdit.app/Contents
 	cp WaveEdit dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	cp -R logo*.png logo.icns fonts catalog dist/WaveEdit/WaveEdit.app/Contents/Resources
-	# Remap dylibs in executable
-	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libsamplerate.0.dylib @executable_path/libsamplerate.0.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	cp dep/lib/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS
-	install_name_tool -change $(PWD)/dep/lib/libsndfile.1.dylib @executable_path/libsndfile.1.dylib dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
-	otool -L dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
+	# Copy Homebrew dylibs into the bundle, remap them and ad-hoc sign
+	scripts/bundle_dylibs.sh dist/WaveEdit/WaveEdit.app/Contents/MacOS/WaveEdit
 else ifeq ($(ARCH),win)
 	cp -R logo*.png fonts catalog dist/WaveEdit
 	cp WaveEdit.exe dist/WaveEdit
@@ -112,7 +109,7 @@ else ifeq ($(ARCH),win)
 	cp dep/bin/libsamplerate-0.dll dist/WaveEdit
 	cp dep/bin/libsndfile-1.dll dist/WaveEdit
 endif
-	cd dist && zip -9 -r WaveEdit-$(VERSION)-$(ARCH).zip WaveEdit
+	cd dist && zip -9 -r -y WaveEdit-$(VERSION)-$(ARCH)-$(shell uname -m).zip WaveEdit
 
 
 # SUFFIXES:

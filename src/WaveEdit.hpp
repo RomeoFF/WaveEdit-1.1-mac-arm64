@@ -79,7 +79,7 @@ inline float linterpf(const float *p, float x) {
 
 /** Returns a random number on [0, 1) */
 inline float randf() {
-	return (float)rand() / RAND_MAX;
+	return (float)(rand() / ((double)RAND_MAX + 1.0));
 }
 
 /** Complex multiply c = a * b
@@ -110,6 +110,9 @@ void openBrowser(const char *url);
 float *loadAudio(const char *filename, int *length);
 /** Converts a printf format to a std::string */
 std::string stringf(const char *format, ...);
+/** Returns the path of a per-user writable file (settings, autosave).
+On Mac this is ~/Library/Application Support/WaveEdit/<filename>, since the app bundle must stay read-only. */
+std::string userPath(const char *filename);
 /** Truncates a string if needed, inserting ellipses (...), to be no greater than `maxLen` characters */
 void ellipsize(char *str, int maxLen);
 unsigned char *base64_encode(const unsigned char *src, size_t len, size_t *out_len);
@@ -293,6 +296,8 @@ float renderBankWave(const char *name, float height, const float *lines, int lin
 
 void renderWaveMenu();
 void uiInit();
+struct SDL_Window;
+void uiUpdateDpi(SDL_Window *window);
 void uiDestroy();
 void uiRender();
 

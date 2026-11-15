@@ -27,6 +27,11 @@ static bool showTestWindow = false;
 static ImTextureID logoTextureLight;
 static ImTextureID logoTextureDark;
 static ImTextureID logoTexture;
+// Double-resolution logos for Retina displays, drawn at the same size in points
+static ImTextureID logoTextureLight2x;
+static ImTextureID logoTextureDark2x;
+static ImTextureID logoTexture2x;
+static float uiScale = 1.0;
 char lastFilename[1024] = "";
 static int styleId = 0;
 int selectedId = 0;
@@ -372,7 +377,8 @@ void renderMenu() {
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2(width + 2 * padding.x, height + 2 * padding.y));
 		if (ImGui::Begin("Logo", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoInputs)) {
-			ImGui::Image(logoTexture, ImVec2(width, height));
+			// Size in points comes from the 1x image; on Retina, the 2x texture fills it pixel for pixel
+			ImGui::Image(uiScale >= 1.5 ? logoTexture2x : logoTexture, ImVec2(width, height));
 			ImGui::End();
 		}
 		ImGui::PopStyleVar();
@@ -853,6 +859,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.32f, 0.52f, 0.65f, 1.00f);
 		style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.50f);
 		logoTexture = logoTextureLight;
+		logoTexture2x = logoTextureLight2x;
 	}
 	else if (styleId == 1) {
 		// base16-atelier-dune
@@ -919,6 +926,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_TextSelectedBg]       = base[0x3];
 		style.Colors[ImGuiCol_ModalWindowDarkening] = alpha(base[0x1], 0.5);
 		logoTexture = logoTextureLight;
+		logoTexture2x = logoTextureLight2x;
 	}
 	else if (styleId == 2) {
 		// base16-atelier-dune
@@ -985,6 +993,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_TextSelectedBg]       = base[0x3];
 		style.Colors[ImGuiCol_ModalWindowDarkening] = alpha(base[0x2], 0.5);
 		logoTexture = logoTextureDark;
+		logoTexture2x = logoTextureDark2x;
 	}
 	else if (styleId == 3) {
 		// base16-ashes
@@ -1051,6 +1060,7 @@ static void refreshStyle() {
 		style.Colors[ImGuiCol_TextSelectedBg]       = base[0x3];
 		style.Colors[ImGuiCol_ModalWindowDarkening] = alpha(base[0x2], 0.5);
 		logoTexture = logoTextureDark;
+		logoTexture2x = logoTextureDark2x;
 	}
 }
 
@@ -1062,6 +1072,8 @@ void uiInit() {
 	// Fonts are loaded lazily by uiUpdateDpi(), at the display's pixel density
 	logoTextureLight = loadImage("logo-light.png");
 	logoTextureDark = loadImage("logo-dark.png");
+	logoTextureLight2x = loadImage("logo-light@2x.png");
+	logoTextureDark2x = loadImage("logo-dark@2x.png");
 
 	// Load UI settings
 	// If this gets any more complicated, it should be JSON.
@@ -1091,6 +1103,7 @@ void uiUpdateDpi(SDL_Window *window) {
 	if (scale == currentScale)
 		return;
 	currentScale = scale;
+	uiScale = scale;
 
 	ImGuiIO &io = ImGui::GetIO();
 	io.Fonts->Clear();

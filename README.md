@@ -1,4 +1,4 @@
-# WaveEdit-2
+# WaveEdit-1.1-mac-arm64
 
 WaveEdit from Synthesis Technology made compatible with Apple Silicon.
 

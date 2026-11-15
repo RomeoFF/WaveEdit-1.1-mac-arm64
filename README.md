@@ -1,4 +1,8 @@
-# Synthesis Technology WaveEdit
+# WaveEdit-2
+
+WaveEdit from Synthesis Technology made compatible with Apple Silicon.
+
+## Synthesis Technology WaveEdit
 
 The wavetable and bank editor for the Synthesis Technology [E370](http://synthtech.com/eurorack/E370/) and [E352](http://synthtech.com/eurorack/E352/) Eurorack synthesizer modules.
 
